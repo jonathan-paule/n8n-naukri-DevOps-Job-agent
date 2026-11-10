@@ -32,3 +32,59 @@ Searching for target roles manually across regional tech hubs is time-consuming 
 ## 📐 Pipeline Architecture
 
 The workflow follows a linear, left-to-right event-driven architecture designed to operate smoothly within free-tier API rate limits.
+
+---
+
+## 📸 Workflow Execution Overview
+
+<p align="center">
+  <img src="assets/screenshots/01-canvas-overview.png" alt="n8n Complete Pipeline Canvas" width="900" />
+  <br>
+  <i>Figure 1: Complete end-to-end n8n workflow canvas showing green active status across all execution nodes.</i>
+</p>
+
+---
+
+## ⚙️ Step-by-Step Implementation Guide
+
+### 1️⃣ Automated Data Collection (Apify HTTP Request)
+The pipeline is triggered automatically via a **Schedule Trigger** node. It sends a `POST` payload to the Apify REST API to execute the `epicscrapers~naukri-scraper` Actor.
+
+* **Endpoint:** `https://api.apify.com/v2/acts/epicscrapers~naukri-scraper/run-sync-get-dataset-items`
+* **Target Roles:** DevOps, AWS Cloud Engineer, Platform Engineer.
+* **Batch Sizing:** Configured with `"maxResultsPerQuery": 5` during testing to manage LLM rate limits.
+
+<p align="center">
+  <img src="assets/screenshots/02-apify-http-config.png" alt="Apify HTTP Request Configuration" width="800" />
+</p>
+
+---
+
+### 2️⃣ JavaScript Pre-Processing & Data Normalization
+A custom **Code Node (`JavaScript`)** sanitizes the raw HTML/JSON output from Naukri, handles missing fields with safe fallbacks, cleans up text formatting, and slices the payload for execution safety.
+
+```javascript
+// n8n Code Node - JavaScript Pre-processing
+const items = $input.all();
+const cleanedJobs = [];
+
+// Limit to top items for quota preservation
+const limitedItems = items.slice(0, 5);
+
+for (const item of limitedItems) {
+  const data = item.json;
+  cleanedJobs.push({
+    json: {
+      jobId: data.jobId || data.id || `job_${Math.random().toString(36).substr(2, 9)}`,
+      title: data.title || data.jobTitle || 'N/A',
+      company: data.companyName || data.company || 'N/A',
+      location: Array.isArray(data.location) ? data.location.join(', ') : (data.location || 'N/A'),
+      experience: data.experience || '1-2 years',
+      jdText: (data.description || data.jobDescription || data.snippet || '').replace(/<[^>]*>?/gm, '').trim(),
+      applyUrl: data.url || data.jobUrl || '',
+      postedDate: data.postedDate || new Date().toISOString().split('T')[0]
+    }
+  });
+}
+
+return cleanedJobs;
