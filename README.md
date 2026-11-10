@@ -88,3 +88,47 @@ for (const item of limitedItems) {
 }
 
 return cleanedJobs;
+
+### 3️⃣ AI Match Evaluation (Google Gemini Agent)
+The **AI Agent** node combines candidate specifications with job descriptions and passes them to the connected **Google Gemini Chat Model** sub-node (`models/gemini-1.5-flash` or `models/gemini-3.5-flash`).
+
+#### Candidate Profile Prompt:
+> **Role:** Technical Recruiter Evaluator  
+> **Candidate Profile:** 1+ years experience in AWS Cloud & DevOps Engineering. Core skills include AWS (EC2, S3, VPC, IAM, RDS, Lambda, CloudWatch), Terraform, Docker, Kubernetes, CI/CD Pipelines (Jenkins / GitHub Actions), Python, Shell Scripting, and Linux Administration.  
+> **Evaluation Criteria:** Analyze candidate alignment against the scraped `jdText`. Output strict JSON specifying `matchScore` (0–100), `seniorityFit`, `matchingSkills`, `missingSkills`, and concise `reasoning`.
+
+---
+
+### 4️⃣ Output Parsing & Match Filtering
+The raw text returned by the AI is parsed back into JSON by **`Code in JavaScript1`**. The code applies a strict fit filter (e.g., `matchScore >= 50`) to filter out irrelevant or over-senior roles.
+
+```javascript
+// n8n Code Node - JavaScript Post-processing
+const items = $input.all();
+const filteredJobs = [];
+
+for (const item of items) {
+  let aiData = item.json.output;
+  
+  if (typeof aiData === 'string') {
+    try {
+      aiData = JSON.parse(aiData.replace(/```json\n?|\n?```/g, ''));
+    } catch (e) {
+      continue;
+    }
+  }
+
+  if (aiData && aiData.matchScore >= 50) {
+    filteredJobs.push({
+      json: {
+        matchScore: aiData.matchScore,
+        seniorityFit: aiData.seniorityFit,
+        matchingSkills: aiData.matchingSkills,
+        missingSkills: aiData.missingSkills,
+        reasoning: aiData.reasoning
+      }
+    });
+  }
+}
+
+return filteredJobs;
