@@ -54,7 +54,7 @@ The workflow follows a linear, left-to-right event-driven architecture designed 
 ## 📸 Workflow Execution Overview
 
 <p align="center">
-  <img src="assets/screenshots/01-canvas-overview.png" alt="n8n Complete Pipeline Canvas" width="900" />
+  <img src="assets/Screenshots/01-canvas-overview.png" alt="n8n Complete Pipeline Canvas" width="900" />
   <br>
   <i>Figure 1: Complete end-to-end n8n workflow canvas showing green active status across all execution nodes.</i>
 </p>
@@ -71,7 +71,7 @@ The pipeline is triggered automatically via a **Schedule Trigger** node. It send
 * ⚡ **Batch Sizing:** Configured with `"maxResultsPerQuery": 5` during execution to optimize speed and API quotas.
 
 <p align="center">
-  <img src="assets/screenshots/02-apify-http-config.png" alt="Apify HTTP Request Configuration" width="800" />
+  <img src="assets/Screenshots/02-apify-http-config.png" alt="Apify HTTP Request Configuration" width="800" />
 </p>
 
 ---
